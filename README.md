@@ -1,6 +1,8 @@
 # SingleMoleculeTrackingAnalysis
 Single Molecule Tracking and Blinking Analysis
 
+Run SMolTracking.m after setting image path etc. 
+
 Single Molecule Localization Miscroscopy (SMLM) image processing, fluorescence spot detection and tracking, Point Spread Function fitting.
 
 This is an old code repository (2008-2014) I wrote for basic single molecule tracking and blinking time on-off analysis. Uploaded April 2022 for records. 
