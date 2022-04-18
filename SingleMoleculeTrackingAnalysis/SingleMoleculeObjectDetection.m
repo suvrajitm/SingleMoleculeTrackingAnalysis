@@ -34,6 +34,7 @@ global ObjIdx;
 global ObjIdxWbox;
 %global useWaterShed;
 %global useObjectBox;
+global GaussShapeFilter; % use gaussian shape filter for single molecules
 
 if nargin < 2
     error('Not enough Input arguments');
@@ -82,7 +83,7 @@ useWaterShed = 0;%% by default don't use watershed
 morphoperations =0;% sometimes this is necessary when finding edges
 % not required for clean single molecule image
 
-GaussShapeFilter = 1; % use gaussian shape filter for single molecules
+
 NyquistCriteria =  0; % Nyquist Sampling
 useObjectBox = 0;
 
@@ -230,7 +231,7 @@ addpixels = 1;
 
 ObjIdxFrame = cell(1);
 ObjIdxWboxFrame = ObjIdxFrame;
- 
+param = {};%in case it is not set  
 for j =1:Num_obj
     
     idxL = find(Label_obj == j);
@@ -247,21 +248,26 @@ for j =1:Num_obj
     %%%% linear indices
     ObjBox = sub2ind(size(Iframe),yyb,xxb);
     Iobjectwbox = double(Iframe(ObjBox));
-
     if GaussShapeFilter ==1
         %%% fit the object within the box with 2D gaussian function
-        %[param2dgfit corrval Ifit] = fit2DGaussianPSF(Iobjectwbox,Ibgrnd);
-        [x0_r(j) y0_r(j)] = radialcenter(Iobjectwbox);
-          
+        [param2dgfit corrval Ifit] = fit2DGaussianPSF(Iobjectwbox,Ibgrnd);
+        param{j} = param2dgfit;
+        %[x0_r(j) y0_r(j)] = radialcenter(Iobjectwbox);
+        Ibg(j) = param2dgfit(1);
+        I0(j) = param2dgfit(2); 
+        x0_m(j) = param2dgfit(3);
+        y0_m(j) = param2dgfit(4);
+        sx(j) = param2dgfit(5);
+        sy(j) = param2dgfit(6);  
         %[Afit, x0_g(j), y0_g(j), sigmafit, offset] = gaussfit2Dnonlin(Iobjectwbox);
         gaussShapeCorr = 1;%corrval(1);
        
         NyquistVal = 2.5; 
-        ObjGaussCentroids(j,1) = x0_r(j) + min(xxb(:))-1; %X
-        ObjGaussCentroids(j,2) = y0_r(j) + min(yyb(:))-1; %Y
+        %ObjGaussCentroids(j,1) = x0_r(j) + min(xxb(:))-1; %X
+        %ObjGaussCentroids(j,2) = y0_r(j) + min(yyb(:))-1; %Y
         
-        %ObjGaussCentroids(j,1) = x0_m(j) + min(xxb(:))-1; %X
-        %ObjGaussCentroids(j,2) = y0_m(j) + min(yyb(:))-1; %Y
+        ObjGaussCentroids(j,1) = x0_m(j) + min(xxb(:))-1; %X
+        ObjGaussCentroids(j,2) = y0_m(j) + min(yyb(:))-1; %Y
         
         %ObjGaussCentroids(j,1) = x0_g(j) + min(xxb(:))-1; %X
         %ObjGaussCentroids(j,2) = y0_g(j) + min(yyb(:))-1; %Y
@@ -332,3 +338,4 @@ varargout{4} = ObjIdxWboxFrame;
 varargout{5} = ObjGaussCentroids; %ObjCentroids;
 varargout{6} = ObjectArea;
 varargout{7} = ObjEccentricty;
+varargout{8} = param;

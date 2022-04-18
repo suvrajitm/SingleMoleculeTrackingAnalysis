@@ -80,7 +80,7 @@ fileName = 'I:\Code\SingleMoleculeTracking\7.tif';
 % set some global parameters if needed
 global filedir img_frames;
 global ObjIdx ObjIdxWbox;
-
+global GaussShapeFilter; % use gaussian shape filter for single molecules
 filedir = fileName;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -161,6 +161,7 @@ Ilastframe = imread(filedir,'tiff',num_frames);
 
 % Creating a stack from input images
 fprintf('\nStack Reading ');
+sequence = zeros(img_width,img_height,num_frames);
 for frnum = 1:length(imgframes)
     frn = imgframes(frnum);
     Iframe = imread(filedir,'tiff',frn);
@@ -181,6 +182,10 @@ fprintf('\nImage File Information Obtained ...\n');
 
 % start the single molecule particle detection/ thresholding in each frame
 fprintf('\nObject Detection ... ');
+paramfitall = cell(num_frames);
+
+GaussShapeFilter = 1; % use gaussian shape filter for single molecules
+
 if ~exist('NumShapeFiltObj','var')
     for frnum = 1:step:length(imgframes)
         frn = imgframes(frnum);
@@ -202,15 +207,26 @@ if ~exist('NumShapeFiltObj','var')
         Iadj = Imagebs;
         
         % object detection
-        [Labelframe  NumShapeFiltObj ObjIdxFrame  ObjIdxWboxFrame ObjectCentroids ObjectArea ObjEcc ] = ...
+        [Labelframe  NumShapeFiltObj ObjIdxFrame  ObjIdxWboxFrame ObjectCentroids ObjectArea ObjEcc paramfit] = ...
             SingleMoleculeObjectDetection(I,frn,thresh_sig,pix_size_lim,0,3.0,[64 64],0,0,Ibgrnd); % 3 ,[4 30]
         % control data try: 2.5, [15 120]
         
         for obj_id = 1:NumShapeFiltObj
             ObjIdx{frn,obj_id} = ObjIdxFrame{obj_id};
             ObjIdxWbox{frn,obj_id} = ObjIdxWboxFrame{obj_id};
+            
+            if GaussShapeFilter ==1
+                paramfitall{frn,obj_id} = paramfit{obj_id};
+                objparam = paramfit{obj_id};
+                Ibg{frn,obj_id} = objparam(1);
+                I0{frn,obj_id} = objparam(2);
+                x0{frn,obj_id} = objparam(3);
+                y0{frn,obj_id} = objparam(4);
+                sigmax{frn,obj_id} = objparam(5);
+                sigmay{frn,obj_id} = objparam(6);
+            end
         end
-        
+
         %for objects on the edge put the x,y coordinates of the centroids
         %to zero/image width/height if the original x/y <0 or x/y > image
         %width/height
@@ -262,7 +278,7 @@ if ~exist('NumShapeFiltObj','var')
     
 end
 
-
+return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Perform tracking in 2D
 fprintf('\nObject Tracking in 2D ... \n');
